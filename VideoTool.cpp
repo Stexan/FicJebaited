@@ -5,16 +5,22 @@
 #include "opencv2/highgui/highgui.hpp"
 //#include <opencv2\cv.h>
 #include "opencv2/opencv.hpp"
+#include <vector>
+#include <tuple>
 
 using namespace std;
 using namespace cv;
 //initial min and max HSV filter values.
 //these will be changed using trackbars
-int H_MIN = 0;
+
+// 145 H value and 35 S value for pink only
+// 21 H and 65 S and 165 V for pink and yellow
+
+int H_MIN = 29;
 int H_MAX = 256;
-int S_MIN = 0;
+int S_MIN = 65;
 int S_MAX = 256;
-int V_MIN = 0;
+int V_MIN = 165;
 int V_MAX = 256;
 //default capture width and height
 const int FRAME_WIDTH = 640;
@@ -89,6 +95,8 @@ void drawObject(int x, int y, Mat &frame) {
 	//added 'if' and 'else' statements to prevent
 	//memory errors from writing off the screen (ie. (-25,-25) is not within the window!)
 
+	cout<<"draw x y "<<x<<" "<<y<<"\n";	
+
 	circle(frame, Point(x, y), 20, Scalar(0, 255, 0), 2);
 	if (y - 25 > 0)
 		line(frame, Point(x, y), Point(x, y - 25), Scalar(0, 255, 0), 2);
@@ -103,6 +111,7 @@ void drawObject(int x, int y, Mat &frame) {
 		line(frame, Point(x, y), Point(x + 25, y), Scalar(0, 255, 0), 2);
 	else line(frame, Point(x, y), Point(FRAME_WIDTH, y), Scalar(0, 255, 0), 2);
 
+	cout<<"endedDraw x y "<<x<<" "<<y<<"\n";
 	putText(frame, intToString(x) + "," + intToString(y), Point(x, y + 30), 1, 1, Scalar(0, 255, 0), 2);
 	//cout << "x,y: " << x << ", " << y;
 
@@ -138,8 +147,11 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 	//use moments method to find our filtered object
 	double refArea = 0;
 	bool objectFound = false;
+		
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
+
+		vector<pair<float,float>> foundCoordinates;
 		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
 		if (numObjects < MAX_NUM_OBJECTS) {
 			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
@@ -151,11 +163,17 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				//if the area is the same as the 3/2 of the image size, probably just a bad filter
 				//we only want the object with the largest area so we safe a reference area each
 				//iteration and compare it to the area in the next iteration.
-				if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA && area>refArea) {
-					x = moment.m10 / area;
-					y = moment.m01 / area;
+				//if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA && area>refArea) {
+				if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA) {
+					cout<<"ENTERED WITH "<<index<<"\n";
+
+					pair<float,float> found;
+					found.first = moment.m10 / area;
+					found.second = moment.m01 / area;
+					foundCoordinates.push_back(found);
+
 					objectFound = true;
-					refArea = area;
+					//refArea = area;
 				}
 				else objectFound = false;
 
@@ -163,10 +181,13 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 			}
 			//let user know you found an object
 			if (objectFound == true) {
-				putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
-				//draw object location on screen
-				//cout << x << "," << y;
-				drawObject(x, y, cameraFeed);
+				for(int i = 0; i < foundCoordinates.size(); i++){
+					pair<float,float> found = foundCoordinates[i];
+					putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
+					//draw object location on screen
+					//cout << x << "," << y;
+					drawObject(found.first, found.second, cameraFeed);
+				}
 
 			}
 
@@ -197,7 +218,7 @@ int main(int argc, char* argv[])
 	//video capture object to acquire webcam feed
 	VideoCapture capture;
 	//open capture object at location zero (default location for webcam)
-	capture.open(0);
+	capture.open("rtmp://172.16.254.99/live/nimic");
 	//set height and width of capture frame
 	capture.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH);
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
@@ -205,8 +226,8 @@ int main(int argc, char* argv[])
 	//all of our operations will be performed within this loop
 
 
+	bool pink = true;
 
-	
 	while (1) {
 
 
@@ -216,7 +237,19 @@ int main(int argc, char* argv[])
 		cvtColor(cameraFeed, HSV, COLOR_BGR2HSV);
 		//filter HSV image between values and store filtered image to
 		//threshold matrix
-		inRange(HSV, Scalar(H_MIN, S_MIN, V_MIN), Scalar(H_MAX, S_MAX, V_MAX), threshold);
+
+		inRange(HSV, Scalar(H_MIN, H_MIN, V_MIN), Scalar(H_MAX, S_MAX, V_MAX), threshold);
+				
+
+/* Trivial way to do it - one object on one frame
+		if (pink){
+			inRange(HSV, Scalar(144, 35, 0), Scalar(H_MAX, S_MAX, V_MAX), threshold);
+			pink = false;
+		}else{
+			pink = true;
+			inRange(HSV, Scalar(21, 65, 165), Scalar(H_MAX, S_MAX, V_MAX), threshold);		
+		}
+*/
 		//perform morphological operations on thresholded image to eliminate noise
 		//and emphasize the filtered object(s)
 		if (useMorphOps)
@@ -230,7 +263,7 @@ int main(int argc, char* argv[])
 		//show frames
 		imshow(windowName2, threshold);
 		imshow(windowName, cameraFeed);
-		imshow(windowName1, HSV);
+		//imshow(windowName1, HSV);
 		setMouseCallback("Original Image", on_mouse, &p);
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
@@ -239,4 +272,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
