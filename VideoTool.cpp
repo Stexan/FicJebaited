@@ -146,13 +146,12 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	//use moments method to find our filtered object
 	double refArea = 0;
-	bool objectFound = false;
 		
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
 
 		vector<pair<float,float>> foundCoordinates;
-		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
+		//if number of objects greater than MAX_NUM_OBJECTS we have a noise filter
 		if (numObjects < MAX_NUM_OBJECTS) {
 			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
 
@@ -161,21 +160,14 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 
 				//if the area is less than 20 px by 20px then it is probably just noise
 				//if the area is the same as the 3/2 of the image size, probably just a bad filter
-				//we only want the object with the largest area so we safe a reference area each
-				//iteration and compare it to the area in the next iteration.
 				//if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA && area>refArea) {
 				if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA) {
 					cout<<"ENTERED WITH "<<index<<"\n";
 
-					pair<float,float> found;
-					found.first = moment.m10 / area;
-					found.second = moment.m01 / area;
+					pair<float,float> found = make_pair(moment.m10 / area, moment.m01 / area)
 					foundCoordinates.push_back(found);
 
-					objectFound = true;
-					//refArea = area;
 				}
-				else objectFound = false;
 
 
 			}
@@ -185,13 +177,10 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 					pair<float,float> found = foundCoordinates[i];
 					putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
 					//draw object location on screen
-					//cout << x << "," << y;
 					drawObject(found.first, found.second, cameraFeed);
 				}
 
 			}
-
-
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
