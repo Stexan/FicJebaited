@@ -95,7 +95,7 @@ void drawObject(int x, int y, Mat &frame) {
 	//added 'if' and 'else' statements to prevent
 	//memory errors from writing off the screen (ie. (-25,-25) is not within the window!)
 
-	cout<<"draw x y "<<x<<" "<<y<<"\n";	
+	cout<<"draw x y "<<x<<" "<<y<<"\n";
 
 	circle(frame, Point(x, y), 20, Scalar(0, 255, 0), 2);
 	if (y - 25 > 0)
@@ -146,11 +146,11 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	//use moments method to find our filtered object
 	double refArea = 0;
-		
+
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
 
-		vector<pair<float,float>> foundCoordinates;
+		vector<pair<float,float> > foundCoordinates;
 		//if number of objects greater than MAX_NUM_OBJECTS we have a noise filter
 		if (numObjects < MAX_NUM_OBJECTS) {
 			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
@@ -164,22 +164,20 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA) {
 					cout<<"ENTERED WITH "<<index<<"\n";
 
-					pair<float,float> found = make_pair(moment.m10 / area, moment.m01 / area)
+					pair<float,float> found = make_pair(moment.m10 / area, moment.m01 / area);
 					foundCoordinates.push_back(found);
 
 				}
 
 
 			}
-			//let user know you found an object
-			if (objectFound == true) {
-				for(int i = 0; i < foundCoordinates.size(); i++){
-					pair<float,float> found = foundCoordinates[i];
-					putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
-					//draw object location on screen
-					drawObject(found.first, found.second, cameraFeed);
-				}
+			//if object is found it will be found in foundCoordinates so no check is needed
 
+			for(int i = 0; i < foundCoordinates.size(); i++){
+				pair<float,float> found = foundCoordinates[i];
+				putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
+				//draw object location on screen
+				drawObject(found.first, found.second, cameraFeed);
 			}
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
@@ -228,7 +226,7 @@ int main(int argc, char* argv[])
 		//threshold matrix
 
 		inRange(HSV, Scalar(H_MIN, H_MIN, V_MIN), Scalar(H_MAX, S_MAX, V_MAX), threshold);
-				
+
 
 /* Trivial way to do it - one object on one frame
 		if (pink){
@@ -236,7 +234,7 @@ int main(int argc, char* argv[])
 			pink = false;
 		}else{
 			pink = true;
-			inRange(HSV, Scalar(21, 65, 165), Scalar(H_MAX, S_MAX, V_MAX), threshold);		
+			inRange(HSV, Scalar(21, 65, 165), Scalar(H_MAX, S_MAX, V_MAX), threshold);
 		}
 */
 		//perform morphological operations on thresholded image to eliminate noise
