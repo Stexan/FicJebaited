@@ -66,12 +66,12 @@ void createTrackbars() {
 	namedWindow(trackbarWindowName, 0);
 	//create memory to store trackbar name on window
 	char TrackbarName[50];
-	sprintf(TrackbarName, "H_MIN", H_MIN);
-	sprintf(TrackbarName, "H_MAX", H_MAX);
-	sprintf(TrackbarName, "S_MIN", S_MIN);
-	sprintf(TrackbarName, "S_MAX", S_MAX);
-	sprintf(TrackbarName, "V_MIN", V_MIN);
-	sprintf(TrackbarName, "V_MAX", V_MAX);
+	sprintf(TrackbarName, "H_MIN %d", H_MIN);
+	sprintf(TrackbarName, "H_MAX %d", H_MAX);
+	sprintf(TrackbarName, "S_MIN %d", S_MIN);
+	sprintf(TrackbarName, "S_MAX %d", S_MAX);
+	sprintf(TrackbarName, "V_MIN %d", V_MIN);
+	sprintf(TrackbarName, "V_MAX %d", V_MAX);
 	//create trackbars and insert them into window
 	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
 	//the max value the trackbar can move (eg. H_HIGH),
