@@ -8,6 +8,7 @@
 #include <vector>
 #include <tuple>
 #include "Client.h"
+#include "Controller.h"
 
 using namespace std;
 using namespace cv;
@@ -189,8 +190,8 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 int main(int argc, char* argv[])
 {
 
-	Client *client = new Client();
-	client->send("193.226.12.217",20232,"s");
+	Controller *controller = new Controller();
+	controller->send("fsfs");
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
