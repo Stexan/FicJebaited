@@ -7,9 +7,12 @@
 #include "opencv2/opencv.hpp"
 #include <vector>
 #include <tuple>
+#include "Client.h"
 
 using namespace std;
 using namespace cv;
+//using namespace ClientNamespace;
+
 //initial min and max HSV filter values.
 //these will be changed using trackbars
 
@@ -186,6 +189,8 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 int main(int argc, char* argv[])
 {
 
+	Client *client = new Client();
+	client->send("193.226.12.217",20232,"s");
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
@@ -211,6 +216,7 @@ int main(int argc, char* argv[])
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
+	
 
 
 	bool pink = true;
