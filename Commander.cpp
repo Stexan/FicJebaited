@@ -18,9 +18,9 @@ bool isUpperRight(pair<double, double> myPosition,pair<double, double> enemyPosi
   return myPosition.first < enemyPosition.first && myPosition.second < enemyPosition.second;
 }
 
-const char* getDirection(pair<double, double> oldC, pair<double, double> newC){
+const char* Commander::getDirection(pair<double, double> oldC, pair<double, double> newC){
 
-  int threshold = 5;
+  int threshold = 2;
   if (newC.first - oldC.first > threshold){
     if (newC.second - oldC.second > threshold){
       return "DreaptaJos";
