@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
 void Controller::send(const char *msg){
 
 	//Init client
@@ -18,7 +17,7 @@ void Controller::send(const char *msg){
 	for(int i = 0; buffer[i]; i++){
 		char sendString[2];
 		sprintf(sendString, "%c", buffer[i]);
-		client->send(ip, port, sendString);	
-		sleep(1);		
+		client->send(ip, port, sendString);
+		sleep(1);
 	}
 }
