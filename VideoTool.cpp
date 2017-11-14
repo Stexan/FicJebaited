@@ -9,6 +9,7 @@
 #include <tuple>
 #include "Client.h"
 #include "Controller.h"
+#include "Commander.h"
 
 using namespace std;
 using namespace cv;
@@ -32,7 +33,7 @@ const int FRAME_HEIGHT = 480;
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS = 50;
 //minimum and maximum object area
-const int MIN_OBJECT_AREA = 20 * 20;
+const int MIN_OBJECT_AREA = 50 * 50;
 const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH / 1.5;
 //names that will appear at the top of each window
 const std::string windowName = "Original Image";
@@ -139,6 +140,8 @@ void morphOps(Mat &thresh) {
 
 
 }
+vector<pair<float,float>> objects;
+
 void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 
 	Mat temp;
@@ -183,15 +186,18 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				//draw object location on screen
 				drawObject(found.first, found.second, cameraFeed);
 			}
+			objects = foundCoordinates;
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
 }
+
 int main(int argc, char* argv[])
 {
 
 	Controller *controller = new Controller();
 	controller->send("fsfs");
+	Commander *cmd = new Commander();
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
@@ -217,7 +223,7 @@ int main(int argc, char* argv[])
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	
+
 
 
 	bool pink = true;
@@ -261,6 +267,7 @@ int main(int argc, char* argv[])
 		setMouseCallback("Original Image", on_mouse, &p);
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
+		cmd->go(objects[0], objects[1]);
 		waitKey(30);
 	}
 
