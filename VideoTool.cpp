@@ -10,6 +10,7 @@
 #include "Client.h"
 #include "Controller.h"
 #include "Commander.h"
+#include <string>
 
 using namespace std;
 using namespace cv;
@@ -141,6 +142,7 @@ void morphOps(Mat &thresh) {
 
 }
 vector<pair<float,float>> objects;
+vector<pair<float,float>> oldObjects;
 
 void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 
@@ -186,6 +188,7 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				//draw object location on screen
 				drawObject(found.first, found.second, cameraFeed);
 			}
+            oldObjects = objects;
 			objects = foundCoordinates;
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
@@ -196,8 +199,9 @@ int main(int argc, char* argv[])
 {
 
 	Controller *controller = new Controller();
-	controller->send("fsfs");
+	
 	Commander *cmd = new Commander();
+    
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
@@ -240,7 +244,6 @@ int main(int argc, char* argv[])
 
 		inRange(HSV, Scalar(H_MIN, H_MIN, V_MIN), Scalar(H_MAX, S_MAX, V_MAX), threshold);
 
-
 /* Trivial way to do it - one object on one frame
 		if (pink){
 			inRange(HSV, Scalar(144, 35, 0), Scalar(H_MAX, S_MAX, V_MAX), threshold);
@@ -267,7 +270,21 @@ int main(int argc, char* argv[])
 		setMouseCallback("Original Image", on_mouse, &p);
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		cmd->go(objects[0], objects[1]);
+        
+        //FSM
+        if (objects.size() > 0) {
+            if(!cmd->hasDirection()){
+                controller->send("f");
+                if (oldObjects.size() > 0){
+                    
+                    cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
+                }
+            }else{
+                string direction = cmd->getDirection();
+                
+            }
+        }
+        
 		waitKey(30);
 	}
 

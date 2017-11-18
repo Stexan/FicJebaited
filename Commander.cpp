@@ -18,41 +18,44 @@ bool isUpperRight(pair<double, double> myPosition,pair<double, double> enemyPosi
   return myPosition.first < enemyPosition.first && myPosition.second < enemyPosition.second;
 }
 
-const char* Commander::getDirection(pair<double, double> oldC, pair<double, double> newC){
+
+void Commander::findDirection(FicPoint oldC, FicPoint newC){
 
   int threshold = 2;
-  if (newC.first - oldC.first > threshold){
-    if (newC.second - oldC.second > threshold){
-      return "DreaptaJos";
-    }else if (newC.second - oldC.second < -threshold){
-      return "DreaptaSus";
+  
+  if (newC.getX() - oldC.getX() > threshold){
+    if (newC.getY() - oldC.getY() > threshold){
+      direction = "DreaptaJos";
+    }else if (newC.getY() - oldC.getY() < -threshold){
+      direction = "DreaptaSus";
     }else{
-      return "Dreapta";
+      direction = "Dreapta";
     }
-  }else if (newC.first - oldC.first < -threshold){
-    if (newC.second - oldC.second > threshold){
-      return "StangaJos";
-    }else if (newC.second - oldC.second < -threshold){
-      return "StangaSus";
+  }else if (newC.getX() - oldC.getX() < -threshold){
+    if (newC.getY() - oldC.getY() > threshold){
+      direction = "StangaJos";
+    }else if (newC.getY() - oldC.getY() < -threshold){
+      direction = "StangaSus";
     }else{
-      return "Stanga";
+      direction = "Stanga";
     }
   }else{
-    if (newC.second - oldC.second > threshold){
-      return "Jos";
-    }else if (newC.second - oldC.second < -threshold){
-      return "Sus";
+    if (newC.getY() - oldC.getY() > threshold){
+      direction = "Jos";
+    }else if (newC.getY() - oldC.getY() < -threshold){
+      direction = "Sus";
     }else{
-      return "Static";
+      direction = "";
     }
+      
     assert("reached end of getDirection");
   }
 
 }
 
-void Commander::go(pair<double, double> myPosition, pair<double, double> enemyPosition){
+void Commander::go(FicPoint myPosition, FicPoint enemyPosition){
 
-  if (isLowerLeft(myPosition, enemyPosition)){
+  /*if (isLowerLeft(myPosition, enemyPosition)){
     cout<<"Lower Left";
   }else if (isLowerRight(myPosition, enemyPosition)){
       cout<<"Lower Right";
@@ -60,6 +63,56 @@ void Commander::go(pair<double, double> myPosition, pair<double, double> enemyPo
       cout<<"Upper Left";
   }else if (isUpperRight(myPosition, enemyPosition)){
       cout<<"Upper Right";
-  }
+  }*/
 
+}
+
+void Commander::calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot) {
+    
+    if (direction == "") {
+        return;
+    }
+    
+    FicPoint firstPoint;
+    FicPoint secondPoint;
+    if (direction == "Dreapta"){
+        firstPoint = rightTop;
+        secondPoint = rightBot;
+    }else if (direction == "DreaptaJos"){
+        firstPoint = rightTop;
+        secondPoint = rightBot;
+    }else if (direction == "DreaptaSus"){
+        firstPoint = rightTop;
+        secondPoint = rightBot;
+    }else if (direction == "Stanga"){
+        firstPoint = leftTop;
+        secondPoint = leftBot;
+    }else if (direction == "StangaJos"){
+        firstPoint = leftTop;
+        secondPoint = leftBot;
+    }else if (direction == "StangaSus"){
+        firstPoint = leftTop;
+        secondPoint = leftBot;
+    }else if (direction == "Sus"){
+        firstPoint = leftTop;
+        secondPoint = rightTop;
+    }else if (direction == "Jos"){
+        firstPoint = leftBot;
+        secondPoint = rightBot;
+    }
+    directionLine = FicLine(firstPoint, secondPoint);
+    
+}
+
+FicPoint Commander::getLineCenter(){
+    
+    return FicPoint( ( directionLine.getFirst().getX() + directionLine.getSecond().getX() ) / 2, ( directionLine.getFirst().getY() + directionLine.getSecond().getY() ) / 2 );
+}
+
+string Commander::getDirection() {
+    return direction;
+}
+
+bool Commander::hasDirection() {
+    return (direction != "");
 }
