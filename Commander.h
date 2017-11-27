@@ -11,7 +11,9 @@ class Commander {
     void findDirection(FicPoint oldC, FicPoint newC);
     void calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot);
     FicPoint getLineCenter();
-    void getEnemyPosi(FicPoint myPosition,FicPoint enemyPosition);
+    void getEnemyPosition(FicPoint myPosition,FicPoint enemyPosition);
+    bool fitsEquation(FicPoint p1, FicPoint p2);
+    bool isInBoundingBox(FicPoint botLeft, FicPoint botRight, FicPoint topLeft, FicPoint topRight, FicPoint robot);
     
  private:
     std::string direction;

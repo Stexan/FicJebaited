@@ -6,16 +6,16 @@
 using namespace std;
 
 bool isLowerLeft(FicPoint myPosition, FicPoint enemyPosition){
-    return myPosition.first > enemyPosition.first && myPosition.second > enemyPosition.second;
+    return myPosition.getX() > enemyPosition.getX() && myPosition.getY() > enemyPosition.getY();
 }
 bool isLowerRight(FicPoint myPosition, FicPoint enemyPosition){
-    return myPosition.first < enemyPosition.first && myPosition.second > enemyPosition.second;
+    return myPosition.getX() < enemyPosition.getX() && myPosition.getY() > enemyPosition.getY();
 }
 bool isUpperLeft(FicPoint myPosition,FicPoint enemyPosition){
-    return myPosition.first > enemyPosition.first && myPosition.second < enemyPosition.second;
+    return myPosition.getX() > enemyPosition.getX() && myPosition.getY() < enemyPosition.getY();
 }
 bool isUpperRight(FicPoint myPosition,FicPoint enemyPosition){
-    return myPosition.first < enemyPosition.first && myPosition.second < enemyPosition.second;
+    return myPosition.getX() < enemyPosition.getX() && myPosition.getY() < enemyPosition.getY();
 }
 
 void Commander::findDirection(FicPoint oldC, FicPoint newC){
@@ -102,27 +102,48 @@ void Commander::calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint r
     directionLine = FicLine(firstPoint, secondPoint);
     
 }
-void Commander::getEnemyPosi(FicPoint myPosition,FicPoint enemyPosition){
+void Commander::getEnemyPosition(FicPoint myPosition,FicPoint enemyPosition){
     
-    if(isUpperLeft(myPosition,enemyPosition){
+    if (isUpperLeft(myPosition,enemyPosition)){
         cout<<"Enemy is Lower Right"<<endl;
     }
-    if(isLowerLeft(myPosition,enemyPosition){
+    if (isLowerLeft(myPosition,enemyPosition)){
         cout<<"Enemy is Upper Right"<<endl;
     }
-    if(isUpperRight(myPosition,enemyPosition){
+    if (isUpperRight(myPosition,enemyPosition)){
         cout<<"Enemy is Lower Lef"<<endl;
        }
-    if(isLowerRight(myPosition,enemyPosition){
+    if (isLowerRight(myPosition,enemyPosition)){
         cout<<"Enemy is Upper Left"<<endl;
     }
 }
-                
 FicPoint Commander::getLineCenter(){
     
     return FicPoint( ( directionLine.getFirst().getX() + directionLine.getSecond().getX() ) / 2, ( directionLine.getFirst().getY() + directionLine.getSecond().getY() ) / 2 );
 }
 
+bool Commander::fitsEquation(FicPoint p1, FicPoint p2){
+
+    double thresh = 10;
+    
+    double a = p1.getY() - p2.getY();
+    double b = p2.getX() - p1.getX();
+    double c = p2.getY() * p1.getX() - p1.getY() * p2.getX();
+    
+    double m = -a/b;
+    if (m > -thresh && m < thresh) {
+        return true;
+    }
+    return false;
+}
+       
+bool Commander::isInBoundingBox(FicPoint botLeft, FicPoint botRight, FicPoint topLeft, FicPoint topRight, FicPoint robot){
+    
+    return (robot.getX() >= topLeft.getX() && robot.getX() <= topRight.getX()
+            && robot.getY() >= topLeft.getY() && robot.getY() <= botLeft.getY());
+    
+}
+       
 string Commander::getDirection() {
     return direction;
 }

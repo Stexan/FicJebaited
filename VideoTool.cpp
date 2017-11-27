@@ -143,6 +143,7 @@ void morphOps(Mat &thresh) {
 }
 vector<pair<float,float>> objects;
 vector<pair<float,float>> oldObjects;
+FicPoint enemyObject;
 
 void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 
@@ -188,12 +189,23 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				//draw object location on screen
 				drawObject(found.first, found.second, cameraFeed);
 			}
+            if (objects.size() > 1) {
+                enemyObject = FicPoint(objects[1].first, objects[1].second);
+            }
+            
             oldObjects = objects;
 			objects = foundCoordinates;
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
 }
+
+FicPoint botLeft;
+FicPoint botRight;
+FicPoint topLeft;
+FicPoint topRight;
+
+bool hasDestination = true;
 
 int main(int argc, char* argv[])
 {
@@ -280,11 +292,35 @@ int main(int argc, char* argv[])
                     cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
                 }
             }else{
-                string direction = cmd->getDirection();
-                //cmd->calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot);
-                //cmd->getLineCenter();
+                if (hasDestination){
+                    if(objects.size() > 0)
+                    if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
+                        hasDestination = false;
+                    }
+                }else{
                 
-                //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
+                    string direction = cmd->getDirection();
+                    cmd->calcDirectionLine(topLeft, botLeft, topRight, botRight);
+                    cmd->getLineCenter();
+                    
+                    
+                    while(!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
+                        controller->send("l");
+                    }
+                    
+                    double destinationThresh = 10;
+                    //Axele sunt cele din reprezentarea naturala
+                    topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
+                    topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
+                    botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
+                    botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
+                    hasDestination = true;
+                    
+                    controller->send("f");
+                    
+                    //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
+                    
+                }
             }
         }
         
