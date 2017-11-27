@@ -11,6 +11,7 @@ class Commander {
     void findDirection(FicPoint oldC, FicPoint newC);
     void calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot);
     FicPoint getLineCenter();
+    void getEnemyPosi(FicPoint myPosition,FicPoint enemyPosition);
     
  private:
     std::string direction;

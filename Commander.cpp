@@ -5,19 +5,18 @@
 
 using namespace std;
 
-bool isLowerLeft(pair<double, double> myPosition, pair<double, double> enemyPosition){
-  return myPosition.first > enemyPosition.first && myPosition.second > enemyPosition.second;
+bool isLowerLeft(FicPoint myPosition, FicPoint enemyPosition){
+    return myPosition.first > enemyPosition.first && myPosition.second > enemyPosition.second;
 }
-bool isLowerRight(pair<double, double> myPosition, pair<double, double> enemyPosition){
-  return myPosition.first < enemyPosition.first && myPosition.second > enemyPosition.second;
+bool isLowerRight(FicPoint myPosition, FicPoint enemyPosition){
+    return myPosition.first < enemyPosition.first && myPosition.second > enemyPosition.second;
 }
-bool isUpperLeft(pair<double, double> myPosition, pair<double, double> enemyPosition){
-  return myPosition.first > enemyPosition.first && myPosition.second < enemyPosition.second;
+bool isUpperLeft(FicPoint myPosition,FicPoint enemyPosition){
+    return myPosition.first > enemyPosition.first && myPosition.second < enemyPosition.second;
 }
-bool isUpperRight(pair<double, double> myPosition,pair<double, double> enemyPosition){
-  return myPosition.first < enemyPosition.first && myPosition.second < enemyPosition.second;
+bool isUpperRight(FicPoint myPosition,FicPoint enemyPosition){
+    return myPosition.first < enemyPosition.first && myPosition.second < enemyPosition.second;
 }
-
 
 void Commander::findDirection(FicPoint oldC, FicPoint newC){
 
@@ -103,7 +102,22 @@ void Commander::calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint r
     directionLine = FicLine(firstPoint, secondPoint);
     
 }
-
+void Commander::getEnemyPosi(FicPoint myPosition,FicPoint enemyPosition){
+    
+    if(isUpperLeft(myPosition,enemyPosition){
+        cout<<"Enemy is Lower Right"<<endl;
+    }
+    if(isLowerLeft(myPosition,enemyPosition){
+        cout<<"Enemy is Upper Right"<<endl;
+    }
+    if(isUpperRight(myPosition,enemyPosition){
+        cout<<"Enemy is Lower Lef"<<endl;
+       }
+    if(isLowerRight(myPosition,enemyPosition){
+        cout<<"Enemy is Upper Left"<<endl;
+    }
+}
+                
 FicPoint Commander::getLineCenter(){
     
     return FicPoint( ( directionLine.getFirst().getX() + directionLine.getSecond().getX() ) / 2, ( directionLine.getFirst().getY() + directionLine.getSecond().getY() ) / 2 );

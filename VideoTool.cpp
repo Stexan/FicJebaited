@@ -281,7 +281,10 @@ int main(int argc, char* argv[])
                 }
             }else{
                 string direction = cmd->getDirection();
+                //cmd->calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot);
+                //cmd->getLineCenter();
                 
+                //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
             }
         }
         
