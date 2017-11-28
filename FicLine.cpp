@@ -1,4 +1,4 @@
-#import "FicLine.h"
+#include "FicLine.h"
 
 FicLine::FicLine(){
     first = FicPoint(0,0);

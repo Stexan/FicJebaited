@@ -1,3 +1,14 @@
+//PROTECT GLOBALS WITH MUTEX!
+//RACE CONDITION
+/*
+[h264 @ 0x205e2a0] reference picture missing during reorder
+[h264 @ 0x205e2a0] Missing reference picture
+objects count... 3
+[h264 @ 0x205b7c0] mmco: unref short failure
+objects count... 2
+[h264 @ 0x205b7c0] mmco: unref short failure
+
+*/
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -11,6 +22,11 @@
 #include "Controller.h"
 #include "Commander.h"
 #include <string>
+#include <thread>
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace cv;
@@ -101,7 +117,7 @@ void drawObject(int x, int y, Mat &frame) {
 	//added 'if' and 'else' statements to prevent
 	//memory errors from writing off the screen (ie. (-25,-25) is not within the window!)
 
-	cout<<"draw x y "<<x<<" "<<y<<"\n";
+	//cout<<"draw x y "<<x<<" "<<y<<"\n";
 
 	circle(frame, Point(x, y), 20, Scalar(0, 255, 0), 2);
 	if (y - 25 > 0)
@@ -117,7 +133,7 @@ void drawObject(int x, int y, Mat &frame) {
 		line(frame, Point(x, y), Point(x + 25, y), Scalar(0, 255, 0), 2);
 	else line(frame, Point(x, y), Point(FRAME_WIDTH, y), Scalar(0, 255, 0), 2);
 
-	cout<<"endedDraw x y "<<x<<" "<<y<<"\n";
+	//cout<<"endedDraw x y "<<x<<" "<<y<<"\n";
 	putText(frame, intToString(x) + "," + intToString(y), Point(x, y + 30), 1, 1, Scalar(0, 255, 0), 2);
 	//cout << "x,y: " << x << ", " << y;
 
@@ -137,10 +153,8 @@ void morphOps(Mat &thresh) {
 
 	dilate(thresh, thresh, dilateElement);
 	dilate(thresh, thresh, dilateElement);
-
-
-
 }
+
 vector<pair<float,float>> objects;
 vector<pair<float,float>> oldObjects;
 FicPoint enemyObject;
@@ -172,7 +186,7 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				//if the area is the same as the 3/2 of the image size, probably just a bad filter
 				//if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA && area>refArea) {
 				if (area > MIN_OBJECT_AREA && area<MAX_OBJECT_AREA) {
-					cout<<"ENTERED WITH "<<index<<"\n";
+					//cout<<"ENTERED WITH "<<index<<"\n";
 
 					pair<float,float> found = make_pair(moment.m10 / area, moment.m01 / area);
 					foundCoordinates.push_back(found);
@@ -192,7 +206,7 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
             if (objects.size() > 1) {
                 enemyObject = FicPoint(objects[1].first, objects[1].second);
             }
-            
+
             oldObjects = objects;
 			objects = foundCoordinates;
 		}
@@ -205,15 +219,40 @@ FicPoint botRight;
 FicPoint topLeft;
 FicPoint topRight;
 
-bool hasDestination = true;
+bool hasDestination = false;
+//thread mindThread;
+bool forceStop = false;
+
+void calculateCommands(){
+	while(!forceStop){
+		printf("objects count... %d\n",objects.size());
+		sleep(2);
+	}
+}
+
+void exitHandler(int s){
+	printf("Caught signal %d\n",s);
+	forceStop = true;
+	//mindThread.join();
+
+	exit(1);
+
+}
 
 int main(int argc, char* argv[])
 {
 
 	Controller *controller = new Controller();
-	
 	Commander *cmd = new Commander();
-    
+
+	struct sigaction sigIntHandler;
+
+  sigIntHandler.sa_handler = exitHandler;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
+
+  sigaction(SIGINT, &sigIntHandler, NULL);
+
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
@@ -240,10 +279,8 @@ int main(int argc, char* argv[])
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 
-
-
 	bool pink = true;
-
+	thread mindThread(calculateCommands);
 	while (1) {
 
 
@@ -282,50 +319,57 @@ int main(int argc, char* argv[])
 		setMouseCallback("Original Image", on_mouse, &p);
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-        
-        //FSM
-        if (objects.size() > 0) {
-            if(!cmd->hasDirection()){
-                controller->send("f");
-                if (oldObjects.size() > 0){
-                    
-                    cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
-                }
+/*
+    //FSM
+    if (objects.size() > 0) {
+        if(!cmd->hasDirection()){
+						cout<<"Get Direction \n";
+            controller->send("f");
+            if (oldObjects.size() > 0){
+								cout<<"Has old objects: finding direction \n";
+                cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
+            }
+        }else{
+            if (hasDestination){
+								cout<<"Schimbare de locatie ----> Padis, pentru ca sunt ursi si aparent a fost un atac :)) \n";
+                if(objects.size() > 0){
+	                if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
+	                    hasDestination = false;
+											cout<<"Reached destination \n";
+	                }
+								}
             }else{
-                if (hasDestination){
-                    if(objects.size() > 0)
-                    if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
-                        hasDestination = false;
-                    }
+
+                string direction = cmd->getDirection();
+                cmd->calcDirectionLine(topLeft, botLeft, topRight, botRight);
+                cmd->getLineCenter();
+
+
+                if (!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
+                    controller->send("l");
+										cout<<"Rotating left \n";
                 }else{
-                
-                    string direction = cmd->getDirection();
-                    cmd->calcDirectionLine(topLeft, botLeft, topRight, botRight);
-                    cmd->getLineCenter();
-                    
-                    
-                    while(!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
-                        controller->send("l");
-                    }
-                    
-                    double destinationThresh = 10;
-                    //Axele sunt cele din reprezentarea naturala
-                    topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
-                    topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
-                    botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
-                    botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
-                    hasDestination = true;
-                    
-                    controller->send("f");
-                    
-                    //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
-                    
-                }
+									cout<<"On trajectory! \n";
+	                double destinationThresh = 10;
+	                //Axele sunt cele din reprezentarea naturala
+	                topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
+	                topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
+	                botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
+	                botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
+	                hasDestination = true;
+
+	                controller->send("f");
+								}
+                //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
+
             }
         }
-        
+    }
+*/
 		waitKey(30);
 	}
+	forceStop = true;
+	mindThread.join();
 
 	return 0;
 }

@@ -1,4 +1,4 @@
-#import "FicPoint.h"
+#include "FicPoint.h"
 
 FicPoint::FicPoint(){
     x = 0;
