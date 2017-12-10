@@ -27,6 +27,7 @@ objects count... 2
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <mutex>
 
 using namespace std;
 using namespace cv;
@@ -206,9 +207,10 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
             if (objects.size() > 1) {
                 enemyObject = FicPoint(objects[1].first, objects[1].second);
             }
-
+            //alt: m.lock();
             oldObjects = objects;
 			objects = foundCoordinates;
+            //m.unlock();
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
@@ -222,10 +224,14 @@ FicPoint topRight;
 bool hasDestination = false;
 //thread mindThread;
 bool forceStop = false;
+mutex m;
 
 void calculateCommands(){
+    
 	while(!forceStop){
+        m.lock();
 		printf("objects count... %d\n",objects.size());
+        m.unlock();
 		sleep(2);
 	}
 }
@@ -247,9 +253,9 @@ int main(int argc, char* argv[])
 
 	struct sigaction sigIntHandler;
 
-  sigIntHandler.sa_handler = exitHandler;
-  sigemptyset(&sigIntHandler.sa_mask);
-  sigIntHandler.sa_flags = 0;
+    sigIntHandler.sa_handler = exitHandler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
 
   sigaction(SIGINT, &sigIntHandler, NULL);
 
