@@ -61,6 +61,8 @@ const std::string windowName3 = "After Morphological Operations";
 const std::string trackbarWindowName = "Trackbars";
 
 
+mutex m;
+
 void on_mouse(int e, int x, int y, int d, void *ptr)
 {
 	if (e == EVENT_LBUTTONDOWN)
@@ -207,10 +209,10 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
             if (objects.size() > 1) {
                 enemyObject = FicPoint(objects[1].first, objects[1].second);
             }
-            //alt: m.lock();
+            m.lock();
             oldObjects = objects;
-			objects = foundCoordinates;
-            //m.unlock();
+						objects = foundCoordinates;
+            m.unlock();
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
@@ -224,14 +226,17 @@ FicPoint topRight;
 bool hasDestination = false;
 //thread mindThread;
 bool forceStop = false;
-mutex m;
+
 
 void calculateCommands(){
-    
+
 	while(!forceStop){
-        m.lock();
-		printf("objects count... %d\n",objects.size());
-        m.unlock();
+    m.lock();
+		if (objects.size() > 0)
+			printf("objects count... %f\n",objects[0].first);
+		//printf("objects count... \n");
+
+		m.unlock();
 		sleep(2);
 	}
 }
@@ -323,6 +328,7 @@ int main(int argc, char* argv[])
 		imshow(windowName, cameraFeed);
 		//imshow(windowName1, HSV);
 		setMouseCallback("Original Image", on_mouse, &p);
+
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
 /*
