@@ -210,7 +210,9 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
                 enemyObject = FicPoint(objects[1].first, objects[1].second);
             }
             m.lock();
-            oldObjects = objects;
+						//if (oldObjects.size() == 0) {
+            	oldObjects = objects;
+						//}
 						objects = foundCoordinates;
             m.unlock();
 		}
@@ -249,6 +251,7 @@ void exitHandler(int s){
 	exit(1);
 
 }
+bool wentForward = false;
 
 int main(int argc, char* argv[])
 {
@@ -331,14 +334,22 @@ int main(int argc, char* argv[])
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-/*
+
     //FSM
     if (objects.size() > 0) {
         if(!cmd->hasDirection()){
 						cout<<"Get Direction \n";
-            controller->send("f");
+						if (!wentForward) {
+            	controller->send("f");
+
+							sleep(1);
+
+							controller->send("s");
+							wentForward = true;
+						}
             if (oldObjects.size() > 0){
 								cout<<"Has old objects: finding direction \n";
+								cout<<"current:"<<objects[0].first<<" "<<objects[0].second<<"; old:"<<oldObjects[0].first<<" "<<oldObjects[0].second<<"\n";
                 cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
             }
         }else{
@@ -362,6 +373,8 @@ int main(int argc, char* argv[])
 										cout<<"Rotating left \n";
                 }else{
 									cout<<"On trajectory! \n";
+									cout<<"enemy point"<<enemyObject.getX()<<" "<<enemyObject.getY()<<"\n";
+									cout<<"middle point:"<<objects[0].first<<" "<<objects[0].second<<"\n";
 	                double destinationThresh = 10;
 	                //Axele sunt cele din reprezentarea naturala
 	                topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
@@ -377,7 +390,7 @@ int main(int argc, char* argv[])
             }
         }
     }
-*/
+
 		waitKey(30);
 	}
 	forceStop = true;

@@ -21,7 +21,7 @@ bool isUpperRight(FicPoint myPosition,FicPoint enemyPosition){
 void Commander::findDirection(FicPoint oldC, FicPoint newC){
 
   int threshold = 2;
-  
+
   if (newC.getX() - oldC.getX() > threshold){
     if (newC.getY() - oldC.getY() > threshold){
       direction = "DreaptaJos";
@@ -46,7 +46,7 @@ void Commander::findDirection(FicPoint oldC, FicPoint newC){
     }else{
       direction = "";
     }
-      
+
     assert("reached end of getDirection");
   }
 
@@ -67,11 +67,11 @@ void Commander::go(FicPoint myPosition, FicPoint enemyPosition){
 }
 
 void Commander::calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint rightTop, FicPoint rightBot) {
-    
+
     if (direction == "") {
         return;
     }
-    
+
     FicPoint firstPoint;
     FicPoint secondPoint;
     if (direction == "Dreapta"){
@@ -100,10 +100,10 @@ void Commander::calcDirectionLine(FicPoint leftTop, FicPoint leftBot, FicPoint r
         secondPoint = rightBot;
     }
     directionLine = FicLine(firstPoint, secondPoint);
-    
+
 }
 void Commander::getEnemyPosition(FicPoint myPosition,FicPoint enemyPosition){
-    
+
     if (isUpperLeft(myPosition,enemyPosition)){
         cout<<"Enemy is Lower Right"<<endl;
     }
@@ -118,32 +118,37 @@ void Commander::getEnemyPosition(FicPoint myPosition,FicPoint enemyPosition){
     }
 }
 FicPoint Commander::getLineCenter(){
-    
+
     return FicPoint( ( directionLine.getFirst().getX() + directionLine.getSecond().getX() ) / 2, ( directionLine.getFirst().getY() + directionLine.getSecond().getY() ) / 2 );
 }
 
 bool Commander::fitsEquation(FicPoint p1, FicPoint p2){
 
-    double thresh = 10;
-    
+    double thresh = 1;
+
     double a = p1.getY() - p2.getY();
     double b = p2.getX() - p1.getX();
     double c = p2.getY() * p1.getX() - p1.getY() * p2.getX();
-    
+    cout<<"a: "<<a<<"\n";
+    cout<<"b: "<<b<<"\n";
+    cout<<"c: "<<c<<"\n";
+
     double m = -a/b;
-    if (m > -thresh && m < thresh) {
+    cout<<"m: "<<m<<"\n";
+
+    if (m >= -thresh && m <= thresh) {
         return true;
     }
     return false;
 }
-       
+
 bool Commander::isInBoundingBox(FicPoint botLeft, FicPoint botRight, FicPoint topLeft, FicPoint topRight, FicPoint robot){
-    
+
     return (robot.getX() >= topLeft.getX() && robot.getX() <= topRight.getX()
             && robot.getY() >= topLeft.getY() && robot.getY() <= botLeft.getY());
-    
+
 }
-       
+
 string Commander::getDirection() {
     return direction;
 }
