@@ -45,6 +45,13 @@ int S_MIN = 65;
 int S_MAX = 256;
 int V_MIN = 165;
 int V_MAX = 256;
+//Values for enemy
+int EH_MIN = 29;
+int EH_MAX = 256;
+int ES_MIN = 65;
+int ES_MAX = 256;
+int EV_MIN = 165;
+int EV_MAX = 256;
 //default capture width and height
 const int FRAME_WIDTH = 640;
 const int FRAME_HEIGHT = 480;
@@ -57,6 +64,7 @@ const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH / 1.5;
 const std::string windowName = "Original Image";
 const std::string windowName1 = "HSV Image";
 const std::string windowName2 = "Thresholded Image";
+const std::string windowName2 = "Thresholded Enemy Image";
 const std::string windowName3 = "After Morphological Operations";
 const std::string trackbarWindowName = "Trackbars";
 
@@ -162,7 +170,7 @@ vector<pair<float,float>> objects;
 vector<pair<float,float>> oldObjects;
 FicPoint enemyObject;
 
-void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
+void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed, bool isEnemy) {
 
 	Mat temp;
 	threshold.copyTo(temp);
@@ -204,16 +212,18 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 				pair<float,float> found = foundCoordinates[i];
 				putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
 				//draw object location on screen
-				drawObject(found.first, found.second, cameraFeed);
+				
+                drawObject(found.first, found.second, cameraFeed);
 			}
-            if (objects.size() > 1) {
-                enemyObject = FicPoint(objects[1].first, objects[1].second);
+            
+            if (isEnemy && foundCoordinates.size() > 0) {
+                enemyObject = FicPoint(foundCoordinates[0].first, foundCoordinates[0].second);
             }
             m.lock();
 						//if (oldObjects.size() == 0) {
-            	oldObjects = objects;
+            oldObjects = objects;
 						//}
-						objects = foundCoordinates;
+            objects = foundCoordinates;
             m.unlock();
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
@@ -279,6 +289,8 @@ int main(int argc, char* argv[])
 	Mat HSV;
 	//matrix storage for binary threshold image
 	Mat threshold;
+    //matrix storage for enemy threshold image
+    Mat Ethreshold;
 	//x and y values for the location of the object
 	int x = 0, y = 0;
 	//create slider bars for HSV filtering
@@ -303,31 +315,27 @@ int main(int argc, char* argv[])
 		//convert frame from BGR to HSV colorspace
 		cvtColor(cameraFeed, HSV, COLOR_BGR2HSV);
 		//filter HSV image between values and store filtered image to
-		//threshold matrix
-
+		
+        //threshold matrix
 		inRange(HSV, Scalar(H_MIN, H_MIN, V_MIN), Scalar(H_MAX, S_MAX, V_MAX), threshold);
-
-/* Trivial way to do it - one object on one frame
-		if (pink){
-			inRange(HSV, Scalar(144, 35, 0), Scalar(H_MAX, S_MAX, V_MAX), threshold);
-			pink = false;
-		}else{
-			pink = true;
-			inRange(HSV, Scalar(21, 65, 165), Scalar(H_MAX, S_MAX, V_MAX), threshold);
-		}
-*/
-		//perform morphological operations on thresholded image to eliminate noise
+        //threshold enemy matrix
+        inRange(HSV, Scalar(EH_MIN, EH_MIN, EV_MIN), Scalar(EH_MAX, ES_MAX, EV_MAX), Ethreshold);
+		
+        //perform morphological operations on thresholded image to eliminate noise
 		//and emphasize the filtered object(s)
 		if (useMorphOps)
 			morphOps(threshold);
+            morphOps(Ethreshold);
 		//pass in thresholded frame to our object tracking function
 		//this function will return the x and y coordinates of the
 		//filtered object
 		if (trackObjects)
-			trackFilteredObject(x, y, threshold, cameraFeed);
-
+			trackFilteredObject(x, y, threshold, cameraFeed, false);
+            trackFilteredObject(x, y, threshold, cameraFeed, true);
+        
 		//show frames
 		imshow(windowName2, threshold);
+        imshow(windowName2, Ethreshold);
 		imshow(windowName, cameraFeed);
 		//imshow(windowName1, HSV);
 		setMouseCallback("Original Image", on_mouse, &p);
