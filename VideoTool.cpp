@@ -64,8 +64,9 @@ const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH / 1.5;
 const std::string windowName = "Original Image";
 const std::string windowName1 = "HSV Image";
 const std::string windowName2 = "Thresholded Image";
-const std::string windowName2 = "Thresholded Enemy Image";
 const std::string windowName3 = "After Morphological Operations";
+const std::string windowName4 = "Thresholded Enemy Image";
+
 const std::string trackbarWindowName = "Trackbars";
 
 
@@ -335,7 +336,7 @@ int main(int argc, char* argv[])
         
 		//show frames
 		imshow(windowName2, threshold);
-        imshow(windowName2, Ethreshold);
+        imshow(windowName4, Ethreshold);
 		imshow(windowName, cameraFeed);
 		//imshow(windowName1, HSV);
 		setMouseCallback("Original Image", on_mouse, &p);
@@ -370,7 +371,7 @@ int main(int argc, char* argv[])
 	                }
 								}
             }else{
-
+                
                 string direction = cmd->getDirection();
                 cmd->calcDirectionLine(topLeft, botLeft, topRight, botRight);
                 cmd->getLineCenter();

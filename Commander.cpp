@@ -2,6 +2,7 @@
 #include <tuple>
 #include <iostream>
 #include <cassert>
+#include <math.h>
 
 using namespace std;
 
@@ -122,10 +123,12 @@ FicPoint Commander::getLineCenter(){
     return FicPoint( ( directionLine.getFirst().getX() + directionLine.getSecond().getX() ) / 2, ( directionLine.getFirst().getY() + directionLine.getSecond().getY() ) / 2 );
 }
 
+//me x1, y1, enemy x2, y2
 bool Commander::fitsEquation(FicPoint p1, FicPoint p2){
 
-    double thresh = 1;
-
+    
+    //center of my forward direction - x0, y0
+    /*
     double a = p1.getY() - p2.getY();
     double b = p2.getX() - p1.getX();
     double c = p2.getY() * p1.getX() - p1.getY() * p2.getX();
@@ -137,6 +140,23 @@ bool Commander::fitsEquation(FicPoint p1, FicPoint p2){
     cout<<"m: "<<m<<"\n";
 
     if (m >= -thresh && m <= thresh) {
+        return true;
+    }
+    */
+    double thresh = 5;
+    FicPoint center = this->getLineCenter();
+    
+    double x0 = center.getX(); double y0 = center.getY();
+    double x1 = p1.getX(); double y1 = p1.getY();
+    double x2 = p2.getX(); double y2 = p2.getY();
+    
+    double top = (x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1);
+    double bot = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    
+    double distance = top / bot;
+    cout<<"distance: "<<distance<<"\n";
+    
+    if (distance >= -thresh && distance <= thresh) {
         return true;
     }
     return false;
