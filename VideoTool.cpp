@@ -52,6 +52,7 @@ int ES_MIN = 65;
 int ES_MAX = 256;
 int EV_MIN = 165;
 int EV_MAX = 256;
+
 //default capture width and height
 const int FRAME_WIDTH = 640;
 const int FRAME_HEIGHT = 480;
@@ -171,6 +172,18 @@ vector<pair<float,float>> objects;
 vector<pair<float,float>> oldObjects;
 FicPoint enemyObject;
 
+FicPoint myBotLeft;
+FicPoint myBotRight;
+FicPoint myTopLeft;
+FicPoint myTopRight;
+
+bool compareContourAreas ( vector<cv::Point> contour1, vector<cv::Point> contour2 ) {
+    double i = fabs( contourArea(cv::Mat(contour1)) );
+    double j = fabs( contourArea(cv::Mat(contour2)) );
+    return ( i < j );
+}
+
+
 void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed, bool isEnemy) {
 
 	Mat temp;
@@ -181,7 +194,9 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed, bool is
 	//find contours of filtered image using openCV findContours function
 	findContours(temp, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	//use moments method to find our filtered object
-	double refArea = 0;
+    sort(contours.begin(), contours.end(), compareContourAreas);
+	
+    double refArea = 0;
 
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
@@ -225,6 +240,21 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed, bool is
             oldObjects = objects;
 						//}
             objects = foundCoordinates;
+            //vector<cv::Point> biggestContour = contours[contours.size()-1];
+            RotatedRect maxRect = minAreaRect(contours[contours.size()-1]);
+            Mat output;
+            boxPoints(maxRect, output);
+            
+            myTopLeft = FicPoint(output.at<double>(0,0), output.at<double>(0,1));
+            myBotLeft = FicPoint(output.at<double>(1,0), output.at<double>(1,1));
+            myTopRight = FicPoint(output.at<double>(2,0), output.at<double>(2,1));
+            myBotRight = FicPoint(output.at<double>(3,0), output.at<double>(3,1));
+            
+            cout<<"my top left:"<<output.at<double>(0,0)<<" "<<output.at<double>(0,1)<<"\n";
+            cout<<"my bot left:"<<output.at<double>(1,0)<<" "<<output.at<double>(1,1)<<"\n";
+            cout<<"my top right:"<<output.at<double>(2,0)<<" "<<output.at<double>(2,1)<<"\n";
+            cout<<"my bot right:"<<output.at<double>(3,0)<<" "<<output.at<double>(3,1)<<"\n";
+            
             m.unlock();
 		}
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
@@ -263,6 +293,14 @@ void exitHandler(int s){
 
 }
 bool wentForward = false;
+
+void updateDirection(Commander *cmd) {
+    if (oldObjects.size() > 0){
+        cout<<"Has old objects: finding direction \n";
+        cout<<"current:"<<objects[0].first<<" "<<objects[0].second<<"; old:"<<oldObjects[0].first<<" "<<oldObjects[0].second<<"\n";
+        cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -346,6 +384,8 @@ int main(int argc, char* argv[])
 
     //FSM
     if (objects.size() > 0) {
+        FicPoint myRobot = FicPoint(objects[0].first, objects[0].second);
+
         if(!cmd->hasDirection()){
 						cout<<"Get Direction \n";
 						if (!wentForward) {
@@ -356,44 +396,50 @@ int main(int argc, char* argv[])
 							controller->send("s");
 							wentForward = true;
 						}
-            if (oldObjects.size() > 0){
-								cout<<"Has old objects: finding direction \n";
-								cout<<"current:"<<objects[0].first<<" "<<objects[0].second<<"; old:"<<oldObjects[0].first<<" "<<oldObjects[0].second<<"\n";
-                cmd->findDirection(FicPoint(objects[0].first, objects[0].second), FicPoint(oldObjects[0].first, oldObjects[0].second));
-            }
+            updateDirection(cmd);
         }else{
             if (hasDestination){
-								cout<<"Schimbare de locatie ----> Padis, pentru ca sunt ursi si aparent a fost un atac :)) \n";
+                cout<<"Schimbare de locatie ----> Padis, pentru ca sunt ursi si aparent a fost un atac :)) \n";
                 if(objects.size() > 0){
 	                if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
 	                    hasDestination = false;
-											cout<<"Reached destination \n";
+                        controller->send("s");
+                        cout<<"Reached destination \n";
 	                }
 								}
             }else{
                 
                 string direction = cmd->getDirection();
-                cmd->calcDirectionLine(topLeft, botLeft, topRight, botRight);
-                cmd->getLineCenter();
-
-
+                cmd->calcDirectionLine(myTopLeft, myBotLeft, myTopRight, myBotRight);
+            
+                FicPoint center = cmd->getLineCenter();
+                cout<<"Line Center: "<<center.getX()<<" "<<center.getY()<<"\n";
+            
+                
                 if (!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
                     controller->send("l");
-										cout<<"Rotating left \n";
+                    cout<<"Rotating left \n";
                 }else{
-									cout<<"On trajectory! \n";
-									cout<<"enemy point"<<enemyObject.getX()<<" "<<enemyObject.getY()<<"\n";
-									cout<<"middle point:"<<objects[0].first<<" "<<objects[0].second<<"\n";
-	                double destinationThresh = 10;
+                    
+                    cout<<"On trajectory! \n";
+                    cout<<"enemy point"<<enemyObject.getX()<<" "<<enemyObject.getY()<<"\n";
+                    cout<<"middle point:"<<objects[0].first<<" "<<objects[0].second<<"\n";
+	                
+                    double destinationThresh = 10;
 	                //Axele sunt cele din reprezentarea naturala
 	                topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
 	                topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
 	                botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
 	                botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
-	                hasDestination = true;
-
+	                
+                    hasDestination = true;
+                    
+                    //update the new direction
+                    updateDirection(cmd);
+                    
+                    
 	                controller->send("f");
-								}
+                }
                 //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
 
             }
