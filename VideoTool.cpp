@@ -69,8 +69,6 @@ const std::string windowName3 = "After Morphological Operations";
 const std::string windowName4 = "Thresholded Enemy Image";
 
 const std::string trackbarWindowName = "Trackbars";
-
-
 mutex m;
 
 void on_mouse(int e, int x, int y, int d, void *ptr)
@@ -151,6 +149,7 @@ void drawObject(int x, int y, Mat &frame) {
 	//cout << "x,y: " << x << ", " << y;
 
 }
+
 void morphOps(Mat &thresh) {
 
 	//create structuring element that will be used to "dilate" and "erode" image.
@@ -245,13 +244,13 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed, bool is
             Mat output;
             boxPoints(maxRect, output);
             
-            myTopLeft = FicPoint(output.at<double>(0,0), output.at<double>(0,1));
-            myBotLeft = FicPoint(output.at<double>(1,0), output.at<double>(1,1));
+            myTopLeft = FicPoint(output.at<double>(1,0), output.at<double>(1,1));
+            myBotLeft = FicPoint(output.at<double>(0,0), output.at<double>(0,1));
             myTopRight = FicPoint(output.at<double>(2,0), output.at<double>(2,1));
             myBotRight = FicPoint(output.at<double>(3,0), output.at<double>(3,1));
             
-            cout<<"my top left:"<<output.at<double>(0,0)<<" "<<output.at<double>(0,1)<<"\n";
-            cout<<"my bot left:"<<output.at<double>(1,0)<<" "<<output.at<double>(1,1)<<"\n";
+            cout<<"my top left:"<<output.at<double>(1,0)<<" "<<output.at<double>(1,1)<<"\n";
+            cout<<"my bot left:"<<output.at<double>(0,0)<<" "<<output.at<double>(0,1)<<"\n";
             cout<<"my top right:"<<output.at<double>(2,0)<<" "<<output.at<double>(2,1)<<"\n";
             cout<<"my bot right:"<<output.at<double>(3,0)<<" "<<output.at<double>(3,1)<<"\n";
             
@@ -265,6 +264,9 @@ FicPoint botLeft;
 FicPoint botRight;
 FicPoint topLeft;
 FicPoint topRight;
+
+Controller *controller = new Controller();
+Commander *cmd = new Commander();
 
 bool hasDestination = false;
 //thread mindThread;
@@ -302,11 +304,81 @@ void updateDirection(Commander *cmd) {
     }
 }
 
+void DFSM(){
+    controller->send("f");
+    sleep(2);
+    controller->send("r");
+    sleep(2);
+    controller->send("s");
+}
+
+void FSM() {
+    if (objects.size() > 0) {
+        FicPoint myRobot = FicPoint(objects[0].first, objects[0].second);
+        
+        if(!cmd->hasDirection()){
+            cout<<"Get Direction \n";
+            if (!wentForward) {
+                controller->send("f");
+                
+                sleep(1);
+                
+                controller->send("s");
+                wentForward = true;
+            }
+            updateDirection(cmd);
+        }else{
+            if (hasDestination){
+                cout<<"Schimbare de locatie ----> Padis, pentru ca sunt ursi si aparent a fost un atac :)) \n";
+                if(objects.size() > 0){
+                    if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
+                        hasDestination = false;
+                        controller->send("s");
+                        cout<<"Reached destination \n";
+                    }
+                }
+            }else{
+                
+                string direction = cmd->getDirection();
+                cmd->calcDirectionLine(myTopLeft, myBotLeft, myTopRight, myBotRight);
+                
+                FicPoint center = cmd->getLineCenter();
+                cout<<"Line Center: "<<center.getX()<<" "<<center.getY()<<"\n";
+                
+                if (!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
+                    controller->send("l");
+                    cout<<"Rotating left \n";
+                }else{
+                    
+                    cout<<"On trajectory! \n";
+                    cout<<"enemy point"<<enemyObject.getX()<<" "<<enemyObject.getY()<<"\n";
+                    cout<<"middle point:"<<objects[0].first<<" "<<objects[0].second<<"\n";
+                    
+                    double destinationThresh = 10;
+                    //Axele sunt cele din reprezentarea naturala
+                    topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
+                    topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
+                    botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
+                    botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
+                    
+                    hasDestination = true;
+                    
+                    //update the new direction
+                    updateDirection(cmd);
+                    
+                    controller->send("f");
+                }
+                //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
+                
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
 
-	Controller *controller = new Controller();
-	Commander *cmd = new Commander();
+	
 
 	struct sigaction sigIntHandler;
 
@@ -382,69 +454,9 @@ int main(int argc, char* argv[])
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
 
-    //FSM
-    if (objects.size() > 0) {
-        FicPoint myRobot = FicPoint(objects[0].first, objects[0].second);
-
-        if(!cmd->hasDirection()){
-						cout<<"Get Direction \n";
-						if (!wentForward) {
-            	controller->send("f");
-
-							sleep(1);
-
-							controller->send("s");
-							wentForward = true;
-						}
-            updateDirection(cmd);
-        }else{
-            if (hasDestination){
-                cout<<"Schimbare de locatie ----> Padis, pentru ca sunt ursi si aparent a fost un atac :)) \n";
-                if(objects.size() > 0){
-	                if (cmd->isInBoundingBox(botLeft,botRight, topLeft,topRight, FicPoint(objects[0].first, objects[0].second))){
-	                    hasDestination = false;
-                        controller->send("s");
-                        cout<<"Reached destination \n";
-	                }
-								}
-            }else{
-                
-                string direction = cmd->getDirection();
-                cmd->calcDirectionLine(myTopLeft, myBotLeft, myTopRight, myBotRight);
-            
-                FicPoint center = cmd->getLineCenter();
-                cout<<"Line Center: "<<center.getX()<<" "<<center.getY()<<"\n";
-            
-                
-                if (!cmd->fitsEquation(FicPoint(objects[0].first, objects[0].second), enemyObject)){
-                    controller->send("l");
-                    cout<<"Rotating left \n";
-                }else{
-                    
-                    cout<<"On trajectory! \n";
-                    cout<<"enemy point"<<enemyObject.getX()<<" "<<enemyObject.getY()<<"\n";
-                    cout<<"middle point:"<<objects[0].first<<" "<<objects[0].second<<"\n";
-	                
-                    double destinationThresh = 10;
-	                //Axele sunt cele din reprezentarea naturala
-	                topLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() - destinationThresh);
-	                topRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() - destinationThresh);
-	                botLeft = FicPoint(enemyObject.getX() - destinationThresh, enemyObject.getY() + destinationThresh);
-	                botRight = FicPoint(enemyObject.getX() + destinationThresh, enemyObject.getY() + destinationThresh);
-	                
-                    hasDestination = true;
-                    
-                    //update the new direction
-                    updateDirection(cmd);
-                    
-                    
-	                controller->send("f");
-                }
-                //Survive/Attack -> get point to go, rotate until it satisfies "ecutia dreptei"
-
-            }
-        }
-    }
+        //FSM
+        FSM();
+        //DFSM();
 
 		waitKey(30);
 	}
